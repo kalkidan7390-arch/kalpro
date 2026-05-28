@@ -2,7 +2,7 @@ import os
 from threading import Thread
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
-PORT = int(os.environ.get("PORT", 10000))
+PORT = int(os.environ.get("PORT", 8080))
 
 class WebEngineHandler(BaseHTTPRequestHandler):
     def do_GET(self):
