@@ -58,7 +58,7 @@ async def _guard(upd: Update, ctx):
             await upd.callback_query.answer("🚫 Account restricted by administration.", show_alert=True)
         return False
     if db.get_maintenance() and u.id not in ADMIN_IDS:
-        m_msg = "🔧 MUYA_NET is currently undergoing system optimization. Please return later."
+        m_msg = "🔧 MUYA_NET_CRYPTO is currently undergoing system optimization. Please return later."
         if upd.message:
             await upd.message.reply_text(m_msg)
         elif upd.callback_query:
@@ -90,7 +90,7 @@ async def show_main(upd: Update, ctx, lng):
 async def cmd_admin(upd: Update, ctx):
     if upd.effective_user.id not in ADMIN_IDS: return
     await upd.message.reply_text(
-        "🛠 *MUYA_NET  Control Terminal*", parse_mode="Markdown",
+        "🛠 *MUYA_NET_CRYPTO Control Terminal*", parse_mode="Markdown",
         reply_markup=InlineKeyboardMarkup([
             [_b("📊 Operational Status", "adm:status"), _b("📢 Broadcast Global", "adm:bc_all")],
             [_b("🎯 Broadcast By ID", "adm:bc_select"), _b("🔑 Broadcast By Keyword", "adm:bc_kw")],
@@ -110,7 +110,7 @@ async def cb_handler(upd: Update, ctx):
             u_c, b_c, j_c, s_c = db.stats()
             m_s = "ACTIVE ⚠️" if db.get_maintenance() else "INACTIVE ✅"
             await q.message.reply_text(
-                f"📊 *MUYA_NET System Matrix Status*\n\n"
+                f"📊 *MUYA_NET_CRYPTO System Matrix Status*\n\n"
                 f"• Registered Node Entities: `{u_c}`\n"
                 f"• Restrained Core Channels: `{b_c}`\n"
                 f"• Database Job Postings: `{j_c}`\n"
@@ -209,7 +209,6 @@ async def cb_handler(upd: Update, ctx):
         await ctx.bot.send_message(uid, t(lng, "listings_end"), reply_markup=InlineKeyboardMarkup([[_back("online_menu", lng)]]))
         
     elif q.data == "alerts_menu":
-        
         kbd = InlineKeyboardMarkup([
             [_b(t(lng, "sub_cat"), "sub_cats"), _b(t(lng, "add_kw"), "add_kw")],
             [_b(t(lng, "my_subs"), "my_subs"), _back("main_menu", lng)]
@@ -311,7 +310,7 @@ async def cb_handler(upd: Update, ctx):
     elif q.data == "share_bot":
         share_txt = f"Find jobs from trusted platforms using this bot! t.me/{BOT_USERNAME}"
         if lng == "am":
-            share_txt = f"ሙያኔት  ቦትን በመጠቀም በቀላሉ ከታማኝ ምንጮች የተለያዩ የስራ እድሎችን በነፃ ያግኙ! t.me/{BOT_USERNAME}"
+            share_txt = f"ሙያኔት ክሪፕቶ ቦትን በመጠቀም በቀላሉ ከታማኝ ምንጮች የተለያዩ የስራ እድሎችን በነፃ ያግኙ! t.me/{BOT_USERNAME}"
         enc_txt = urllib.parse.quote(share_txt)
         valid_share_url = f"https://t.me/share/url?url=https://t.me/{BOT_USERNAME}&text={enc_txt}"
         await q.message.edit_text(t(lng, "share_bot"), parse_mode="Markdown", reply_markup=InlineKeyboardMarkup([
@@ -337,7 +336,7 @@ async def text_handler(upd: Update, ctx):
             count = 0
             for u in users:
                 try:
-                    await ctx.bot.send_message(chat_id=int(u.get("id")), text=f"📢 *MUYA_NET*\n\n{txt}", parse_mode="Markdown")
+                    await ctx.bot.send_message(chat_id=int(u.get("id")), text=f"📢 *MUYA_NET_CRYPTO*\n\n{txt}", parse_mode="Markdown")
                     count += 1
                     await asyncio.sleep(0.05)
                 except: pass
@@ -357,14 +356,13 @@ async def text_handler(upd: Update, ctx):
             count = 0
             for t_id in targets:
                 try:
-                    await ctx.bot.send_message(chat_id=t_id, text=f"📢 *MUYA_NET*\n\n{body.strip()}", parse_mode="Markdown")
+                    await ctx.bot.send_message(chat_id=t_id, text=f"📢 *MUYA_NET_CRYPTO*\n\n{body.strip()}", parse_mode="Markdown")
                     count += 1
                     await asyncio.sleep(0.05)
                 except: pass
             await upd.message.reply_text(f"✅ Targeted pipeline sequence processed to {count}/{len(targets)} targets.")
 
         elif act == "broadcast_keyword":
-          
             if ":" not in txt:
                 await upd.message.reply_text("❌ Syntactic rule error. Format must be: `Keyword : Message here`")
                 return
@@ -384,7 +382,7 @@ async def text_handler(upd: Update, ctx):
                 
                 if kw_target in user_kws or kw_target in user_cats:
                     try:
-                        await ctx.bot.send_message(chat_id=target_uid, text=f"🔔 *MUYA_NET_Alert*\n\n{body}", parse_mode="Markdown")
+                        await ctx.bot.send_message(chat_id=target_uid, text=f"🔔 *MUYA_NET_CRYPTO_Alert*\n\n{body}", parse_mode="Markdown")
                         count += 1
                         await asyncio.sleep(0.05)
                     except: pass
@@ -442,6 +440,13 @@ async def text_handler(upd: Update, ctx):
     await show_main(upd, ctx, lng)
 
 def main():
+    # Fix for Python 3.14 event loop handling
+    try:
+        asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
     app = Application.builder().token(TOKEN).build()
     
     app.add_handler(CommandHandler("start", start))
