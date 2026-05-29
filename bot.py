@@ -6,7 +6,7 @@ import asyncio
 import datetime
 import urllib.parse
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.constants import ChatAction  # Added for the typing animation status
+from telegram.constants import ChatAction  
 from telegram.ext import (Application, CommandHandler, CallbackQueryHandler,
                           MessageHandler, filters)
 import db
@@ -71,6 +71,10 @@ async def start(upd: Update, ctx):
     uid = upd.effective_user.id
     db.register_user(uid, upd.effective_user.username or "", upd.effective_user.full_name or "")
     if not await _guard(upd, ctx): return
+    
+    # Trigger typing animation for /start command
+    await ctx.bot.send_chat_action(chat_id=uid, action=ChatAction.TYPING)
+    
     kbd = InlineKeyboardMarkup([
         [_b("English", "set_lang:en"), _b("አማርኛ", "set_lang:am")]
     ])
@@ -142,6 +146,9 @@ async def cb_handler(upd: Update, ctx):
 
     if not await _guard(upd, ctx): return
 
+    # Global Click Animation: Triggers "typing..." status for all standard user button presses
+    await ctx.bot.send_chat_action(chat_id=uid, action=ChatAction.TYPING)
+
     if q.data.startswith("set_lang:"):
         new_lng = q.data.split(":")[1]
         db.set_lang(uid, new_lng)
@@ -169,8 +176,6 @@ async def cb_handler(upd: Update, ctx):
         
     elif q.data.startswith("cat:"):
         cat_name = q.data.split(":", 1)[1]
-        # Typing animation triggered right before sheet/DB access
-        await ctx.bot.send_chat_action(chat_id=uid, action=ChatAction.TYPING)
         jobs = db.jobs_by_category(cat_name)
         if not jobs:
             await q.message.edit_text(t(lng, "no_jobs"), reply_markup=InlineKeyboardMarkup([[_back("browse", lng)]]))
@@ -197,7 +202,7 @@ async def cb_handler(upd: Update, ctx):
             [_b(t(lng, "video_guide"), "video_guide"), _b(t(lng, "share_bot"), "share_bot")],
             [_back("main_menu", lng)]
         ]
-        await q.message.edit_text(t(lng, "online_title"), parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(rows))
+        await q.message.edit_text(t(lng, "online_title"), parse_mode="Markdown", reply_markup=InlineKeyboardMarkup rows))
         
     elif q.data.startswith("owi:"):
         ckey = q.data.split(":")[1]
@@ -294,8 +299,6 @@ async def cb_handler(upd: Update, ctx):
         
     elif q.data == "cv_match":
         await q.message.edit_text(t(lng, "matching"), parse_mode="Markdown")
-        # Typing animation triggered right before calculation matching loop
-        await ctx.bot.send_chat_action(chat_id=uid, action=ChatAction.TYPING)
         matches = match_jobs(uid)
         if not matches:
             await q.message.edit_text(t(lng, "no_matches"), parse_mode="Markdown", reply_markup=InlineKeyboardMarkup([[_back("cv_menu", lng)]]))
@@ -411,10 +414,11 @@ async def text_handler(upd: Update, ctx):
 
     if not await _guard(upd, ctx): return
 
+    # Global Text Interaction Animation: Triggers "typing..." status for all incoming user text messages
+    await ctx.bot.send_chat_action(chat_id=uid, action=ChatAction.TYPING)
+
     if act == "search":
         ctx.user_data["action"] = None
-        # Typing animation triggered right before string query matching execution
-        await ctx.bot.send_chat_action(chat_id=uid, action=ChatAction.TYPING)
         res = db.search_jobs(txt)
         if not res:
             await upd.message.reply_text(t(lng, "no_results", q=txt), parse_mode="Markdown", reply_markup=InlineKeyboardMarkup([[_b("🏠 Menu", "main_menu")]]))
