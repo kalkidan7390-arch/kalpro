@@ -69,11 +69,15 @@ async def _guard(upd: Update, ctx):
 
 async def start(upd: Update, ctx):
     uid = upd.effective_user.id
+    
+    # 1. Trigger animation instantly on /start command execution
+    try:
+        await ctx.bot.send_chat_action(chat_id=uid, action=ChatAction.TYPING)
+    except Exception:
+        pass
+
     db.register_user(uid, upd.effective_user.username or "", upd.effective_user.full_name or "")
     if not await _guard(upd, ctx): return
-    
-    # Trigger typing animation for /start command
-    await ctx.bot.send_chat_action(chat_id=uid, action=ChatAction.TYPING)
     
     kbd = InlineKeyboardMarkup([
         [_b("English", "set_lang:en"), _b("አማርኛ", "set_lang:am")]
@@ -94,6 +98,12 @@ async def show_main(upd: Update, ctx, lng):
 
 async def cmd_admin(upd: Update, ctx):
     if upd.effective_user.id not in ADMIN_IDS: return
+    
+    try:
+        await ctx.bot.send_chat_action(chat_id=upd.effective_user.id, action=ChatAction.TYPING)
+    except Exception:
+        pass
+
     await upd.message.reply_text(
         "🛠 *MUYA_NET_CRYPTO Control Terminal*", parse_mode="Markdown",
         reply_markup=InlineKeyboardMarkup([
@@ -106,6 +116,13 @@ async def cmd_admin(upd: Update, ctx):
 async def cb_handler(upd: Update, ctx):
     q = upd.callback_query
     uid = q.from_user.id
+    
+    # 2. Trigger typing animation instantly on ALL keyboard button clicks
+    try:
+        await ctx.bot.send_chat_action(chat_id=uid, action=ChatAction.TYPING)
+    except Exception:
+        pass
+
     lng = db.get_lang(uid) or "en"
     await q.answer()
 
@@ -145,9 +162,6 @@ async def cb_handler(upd: Update, ctx):
         return
 
     if not await _guard(upd, ctx): return
-
-    # Global Click Animation: Triggers "typing..." status for all standard user button presses
-    await ctx.bot.send_chat_action(chat_id=uid, action=ChatAction.TYPING)
 
     if q.data.startswith("set_lang:"):
         new_lng = q.data.split(":")[1]
@@ -202,7 +216,8 @@ async def cb_handler(upd: Update, ctx):
             [_b(t(lng, "video_guide"), "video_guide"), _b(t(lng, "share_bot"), "share_bot")],
             [_back("main_menu", lng)]
         ]
-        await q.message.edit_text(t(lng, "online_title"), parse_mode="Markdown", reply_markup=InlineKeyboardMarkup rows))
+        # Syntax Layout Fix Applied below:
+        await q.message.edit_text(t(lng, "online_title"), parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(rows))
         
     elif q.data.startswith("owi:"):
         ckey = q.data.split(":")[1]
@@ -318,7 +333,7 @@ async def cb_handler(upd: Update, ctx):
     elif q.data == "share_bot":
         share_txt = f"Find jobs from trusted platforms using this bot! t.me/{BOT_USERNAME}"
         if lng == "am":
-            share_txt = f"ሙያኔት ክሪፕቶ ቦትን በመጠቀም በቀላሉ ከታማኝ ምንጮች የተለያዩ የስራ እድሎችን በነፃ ያግኙ! t.me/{BOT_USERNAME}"
+            share_txt = f"ሙያኔት ክሪፕቶ ቦትን በመጠቀም በቀላሉ ከታኝ ምንጮች የተለያዩ የስራ እድሎችን በነፃ ያግኙ! t.me/{BOT_USERNAME}"
         enc_txt = urllib.parse.quote(share_txt)
         valid_share_url = f"https://t.me/share/url?url=https://t.me/{BOT_USERNAME}&text={enc_txt}"
         await q.message.edit_text(t(lng, "share_bot"), parse_mode="Markdown", reply_markup=InlineKeyboardMarkup([
@@ -328,6 +343,13 @@ async def cb_handler(upd: Update, ctx):
 
 async def text_handler(upd: Update, ctx):
     uid = upd.effective_user.id
+    
+    # 3. Trigger typing animation instantly on ALL incoming custom text submissions
+    try:
+        await ctx.bot.send_chat_action(chat_id=uid, action=ChatAction.TYPING)
+    except Exception:
+        pass
+
     txt = upd.message.text.strip() if upd.message.text else ""
     if not txt: return
     
@@ -413,9 +435,6 @@ async def text_handler(upd: Update, ctx):
         return
 
     if not await _guard(upd, ctx): return
-
-    # Global Text Interaction Animation: Triggers "typing..." status for all incoming user text messages
-    await ctx.bot.send_chat_action(chat_id=uid, action=ChatAction.TYPING)
 
     if act == "search":
         ctx.user_data["action"] = None
