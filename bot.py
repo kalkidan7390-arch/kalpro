@@ -6,6 +6,7 @@ import asyncio
 import datetime
 import urllib.parse
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.constants import ChatAction  # Added for the typing animation status
 from telegram.ext import (Application, CommandHandler, CallbackQueryHandler,
                           MessageHandler, filters)
 import db
@@ -168,6 +169,8 @@ async def cb_handler(upd: Update, ctx):
         
     elif q.data.startswith("cat:"):
         cat_name = q.data.split(":", 1)[1]
+        # Typing animation triggered right before sheet/DB access
+        await ctx.bot.send_chat_action(chat_id=uid, action=ChatAction.TYPING)
         jobs = db.jobs_by_category(cat_name)
         if not jobs:
             await q.message.edit_text(t(lng, "no_jobs"), reply_markup=InlineKeyboardMarkup([[_back("browse", lng)]]))
@@ -291,6 +294,8 @@ async def cb_handler(upd: Update, ctx):
         
     elif q.data == "cv_match":
         await q.message.edit_text(t(lng, "matching"), parse_mode="Markdown")
+        # Typing animation triggered right before calculation matching loop
+        await ctx.bot.send_chat_action(chat_id=uid, action=ChatAction.TYPING)
         matches = match_jobs(uid)
         if not matches:
             await q.message.edit_text(t(lng, "no_matches"), parse_mode="Markdown", reply_markup=InlineKeyboardMarkup([[_back("cv_menu", lng)]]))
@@ -408,6 +413,8 @@ async def text_handler(upd: Update, ctx):
 
     if act == "search":
         ctx.user_data["action"] = None
+        # Typing animation triggered right before string query matching execution
+        await ctx.bot.send_chat_action(chat_id=uid, action=ChatAction.TYPING)
         res = db.search_jobs(txt)
         if not res:
             await upd.message.reply_text(t(lng, "no_results", q=txt), parse_mode="Markdown", reply_markup=InlineKeyboardMarkup([[_b("🏠 Menu", "main_menu")]]))
@@ -440,7 +447,6 @@ async def text_handler(upd: Update, ctx):
     await show_main(upd, ctx, lng)
 
 def main():
-    # Fix for Python 3.14 event loop handling
     try:
         asyncio.get_event_loop()
     except RuntimeError:
